@@ -7,11 +7,18 @@
   - [React Query Dev Tools](#react-query-dev-tools)
   - [staleTime vs cacheTime](#staletime-vs-cachetime)
 - [페이지 매김, 프리페칭과 변이](#section-02-페이지-매김-프리페칭과-변이)
+
   - [query key](#query-key)
   - [Pagination](#pagination)
   - [prefetching](#prefetching)
   - [Mutation](#mutation)
   - [useMutation](#usemutation)
+
+- ["동적(JIT)"데이터 로드를 위한 무한 쿼리](#section_03-동적jit데이터-로드를-위한-무한-쿼리)
+  - [useInfiniteQuery](#useinfinitequery)
+  - [useQuery vs useInfiniteQuery](#usequery-vs-useinfinitequery)
+  - [useInfiniteQuery Syntax](#useinfinitequery-syntax)
+  - [useInfiniteQuery Flow](#useinfinitequery-flow)
 
 # Section 01. 쿼리 생성 및 로딩/에러 상태
 
@@ -121,3 +128,60 @@ const { data } = useQuery(["comment", post.id], () => fetchComments(post.id));
   - 데이터를 저장하지 않으므로 쿼리 키가 필요 x (쿼리가 아닌 변이임)
   - isLoading 있지만 isFetching 없음 (캐시된 항목이 없으므로... )
   - 변이에 관련된 캐시, refeteching 또한 기본값으로 존재하지 x
+
+# section_03. "동적(JIT)"데이터 로드를 위한 무한 쿼리
+
+## useInfiniteQuery
+
+- 다음 쿼리가 뭘지 추적하게 됨
+- 이 경우 다음쿼리가 데이터 일부로 반환됨
+
+## useQuery vs useInfiniteQuery
+
+> 반환 객체에서 반환된 데이터 프로퍼티의 형태가 다름
+
+- useQuery에서 데이터: 단순히 쿼리 함수에서 반환되는 데이터
+- useInfiniteQuery에서의 객체: 두개의 프로퍼티를 가짐
+  - pages
+    - 데이터 페이지 객체의 배열인 페이지 페이지에 있는 각 요소가 하나의 useQuery에서 받는 데이터에 해당됨
+  - pageParams
+    - 각 페이지의 매개변수가 기록되어 있음
+    - 많이 사용되지 x
+- 모든 쿼리는 페이지 배열에 고유한 요소를 가지고 있고, 그 요소는 해당 쿼리에 대한 데이터에 해당됨 페이지가 진행되면서 쿼리도 바뀜
+- pageParams는 검색된 쿼리의 키를 추적함
+
+## useInfiniteQuery Syntax
+
+- **pageParam** 은 쿼리 함수에 전달되는 매개변수
+  - 컴포넌트 상태 값의 일부가 아니기 때문에 react query가 pageParam의 현재 값을 유지함
+
+```javascript
+useInfinityQuery("sw-people", ({pageParam => defaultUrl}) => fetchUrl(pageParam))
+```
+
+## useInfiniteQuery Flow
+
+1. Component mounts
+
+- 이 시점에서는 아직 쿼리를 만들지 않았기 때문에 `useInfiniteQuery`이 반환한 객체의 data 프로퍼티가 정의되어 있지 않음
+
+2. Fetch First Page
+
+- `useInfiniteQuery`가 쿼리 함수를 이용해서 첫 페이지를 가져옴
+
+```javascript
+useInfiniteQuery((pageParam = defaultUrl) => ....)
+```
+
+- pageParam 인수: 우리가 기본값으로 정의한 것
+- pageParam을 이용해 첫번째 페이지를 가져오고 반환 객체 데이터의 페이지 프로퍼티를 설정
+
+```javascript
+const { data } = useInfiniteQuery(...)
+// data,pages[0] : 첫번째페이지
+```
+
+3. getNextPageParam Update pageParam
+
+- 첫번째 데이터가 반환된 후 React Query가 getNextPageParam을 실행
+  ![useInfiniteQuery_flow](./images/useInfiniteQuery_flow.png)
