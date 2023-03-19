@@ -15,10 +15,15 @@
   - [useMutation](#usemutation)
 
 - ["동적(JIT)"데이터 로드를 위한 무한 쿼리](#section_03-동적jit데이터-로드를-위한-무한-쿼리)
+
   - [useInfiniteQuery](#useinfinitequery)
   - [useQuery vs useInfiniteQuery](#usequery-vs-useinfinitequery)
   - [useInfiniteQuery Syntax](#useinfinitequery-syntax)
   - [useInfiniteQuery Flow](#useinfinitequery-flow)
+
+- [Section 04. 더 큰 앱에서의 React Query: 설정, 집중화, custom hook](#section-04-더-큰-앱에서의-react-query-설정-집중화-custom-hook)
+  - [React Query가 큰 앱에서 사용될 때](#react-query가-큰-앱에서-사용될-때)
+  - [React Query의 Custom Hooks](#react-query의-custom-hooks)
 
 # Section 01. 쿼리 생성 및 로딩/에러 상태
 
@@ -185,3 +190,51 @@ const { data } = useInfiniteQuery(...)
 
 - 첫번째 데이터가 반환된 후 React Query가 getNextPageParam을 실행
   ![useInfiniteQuery_flow](./images/useInfiniteQuery_flow.png)
+
+# Section 04. 더 큰 앱에서의 React Query: 설정, 집중화, custom hook
+
+## React Query가 큰 앱에서 사용될 때
+
+- fectching과 에러에 대한 인디케이터를 중앙화하고
+- 데이터를 refetching하게끔 만들어야함
+
+> 쿼리에서 데이터를 새로 고침하게끔 만들어야 제어할 수 있어야함
+
+- 인증을 진행하기 위해 서버와 통신
+- 의존성 qeury
+- testing
+- ...etc
+
+## React Query의 Custom Hooks
+
+- 다수의 컴포넌트에서 데이터를 엑세스해야하는경우 useQuery 호출을 재작성할 필요 x
+- key를 헷갈릴 위험이 x
+- 사용하길 원하는 쿼리 함수를 혼동하는 위험 x
+- 일반적으로 디스플레이 레이어에서 데이터를 어떻게 가져오는가에 대한 구현을 추상화함
+  - ex) 구현을 변경하기로 결정했다면 컴포넌트를 업데이트할 필요 없이 훅을 업데이트 하면 됨
+
+## useIsFetching
+
+- 작은 앱의 경우
+  - return 객체에서 isFetching 사용 (useQuery 리턴 객체에서 isFetching의 구조를 분해)
+- 더 큰 앱의 경우
+  - 어떠한 쿼리가 데이터를 가져오는 중일 때 loading spinner 띄우자
+  - useIsFetching은 현재 가져오기 중인 쿼리가 있는지를 알려줌
+
+> 즉, 더이상 각각의 커스텀 훅에 대해 isFetching을 사용할 필요가 x
+
+## QueryClient의 default onError 옵션
+
+- useError 훅은 제공되있지 않음 -> 왜? 존재할수가 없어서
+  - 정수 이상의 값이 표시되어야 하기 때문
+  - 사용자에게 오류를 표시하려면 각오류에 대한 문자열이 필요 -> 에러메세지는 시시각각변함
+- QueryClent를 위해 onError 핸들러 기본값을 만드는게 최선
+  - QueryClient의 두가지 옵션객체
+  ```javascript
+  {
+    queries: {useQuery options},
+    // query 프로퍼티: useQuery에 추가하는 options 형식의 값을 가짐
+    mutations: {useMutation options}
+    // mutations 프로퍼티: useMutation에 추가하는 options 형식을 가짐
+  }
+  ```
